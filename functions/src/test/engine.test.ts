@@ -195,3 +195,13 @@ test("departing lobby host passes host permission and missing role to successor"
  assert.equal(r.public.members.b.role,"copilot");
  assert.equal(r.public.members.c.role,"pilot");
 });
+
+test("empty Firebase RTDB collections are normalized on first action",()=>{
+ let r=createRoom("a","ABCDEFGH2",10);
+ delete (r.public as Partial<typeof r.public>).actionIds;
+ delete (r.public.board as Partial<typeof r.public.board>).slots;
+ r=act(r,"a","ready");
+ assert.equal(r.public.members.a.ready,true);
+ assert.ok(r.public.actionIds);
+ assert.ok(r.public.board.slots);
+});

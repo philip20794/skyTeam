@@ -85,6 +85,7 @@ export function createRoom(uid:string,code:string,now:number):Room {
 }
 export function joinRoom(room:Room,uid:string,now:number):Room {
  const r=structuredClone(room);
+ r.privateDice ??= {};
  if(r.public.members[uid])return r;
  assert(r.public.phase==="lobby","Die Partie wurde bereits gestartet.");
  assert(Object.keys(r.public.members).length<2,"Die Lobby ist voll.");
@@ -172,6 +173,16 @@ function roundEnd(p:PublicState):void {
 export function transition(input:Room,uid:string,action:Action,actionId:string,roll:DiceSource):Room {
  assert(typeof actionId==="string"&&actionId.length>=8&&actionId.length<=100,"Aktions-ID fehlt.");
  const room=structuredClone(input),p=room.public;
+ // RTDB prunes empty objects and arrays on write; normalize on every request.
+ p.actionIds ??= {};
+ p.board.slots ??= {};
+ p.rerollPending ??= null;
+ p.result ??= null;
+ p.activeRole ??= null;
+ room.privateDice ??= {};
+ for(const state of Object.values(room.privateDice)){
+  state.dice ??= [];
+ }
  assert(p.members[uid],"Du bist nicht Mitglied dieser Partie.");
  if(p.actionIds[actionId])return room;
  const me=p.members[uid],b=p.board,privateState=room.privateDice[uid];

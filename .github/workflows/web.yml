@@ -18,11 +18,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
-      SKYTEAM_FIREBASE_API_KEY: ${{ vars.SKYTEAM_FIREBASE_API_KEY }}
-      SKYTEAM_FIREBASE_WEB_APP_ID: ${{ vars.SKYTEAM_FIREBASE_WEB_APP_ID }}
+      SKYTEAM_FIREBASE_API_KEY: ${{ vars.SKYTEAM_FIREBASE_API_KEY || 'AIzaSyD9QtKycplmKvXT1i8sdDNMjkCiM2SeH-g' }}
+      SKYTEAM_FIREBASE_WEB_APP_ID: ${{ vars.SKYTEAM_FIREBASE_WEB_APP_ID || '1:772729294994:web:ce0adb587dff2efe8e164b' }}
       SKYTEAM_FIREBASE_ANDROID_APP_ID: ${{ vars.SKYTEAM_FIREBASE_ANDROID_APP_ID }}
-      SKYTEAM_FIREBASE_SENDER_ID: ${{ vars.SKYTEAM_FIREBASE_SENDER_ID }}
-      SKYTEAM_FIREBASE_DATABASE_URL: ${{ vars.SKYTEAM_FIREBASE_DATABASE_URL }}
+      SKYTEAM_FIREBASE_SENDER_ID: ${{ vars.SKYTEAM_FIREBASE_SENDER_ID || '772729294994' }}
+      SKYTEAM_FIREBASE_DATABASE_URL: ${{ vars.SKYTEAM_FIREBASE_DATABASE_URL || 'https://guenter-sky-team-default-rtdb.europe-west1.firebasedatabase.app' }}
     steps:
       - uses: actions/checkout@v4
 
