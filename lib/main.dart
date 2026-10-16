@@ -1,5 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -46,6 +48,13 @@ class _HomePageState extends State<HomePage> {
         throw StateError('Firebase-App-IDs fehlen. Siehe docs/FIREBASE_SETUP.md.');
       }
       await Firebase.initializeApp(options: SkyFirebaseSettings.forPlatform(kIsWeb));
+      if (SkyFirebaseSettings.useEmulator) {
+        final host = SkyFirebaseSettings.emulatorHost;
+        await FirebaseAuth.instance.useAuthEmulator(host, 9099);
+        FirebaseDatabase.instance.useDatabaseEmulator(host, 9000);
+        FirebaseFunctions.instanceFor(region: 'europe-west1')
+            .useFunctionsEmulator(host, 5001);
+      }
       if (FirebaseAuth.instance.currentUser == null) {
         await FirebaseAuth.instance.signInAnonymously();
       }
