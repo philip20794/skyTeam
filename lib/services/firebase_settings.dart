@@ -8,6 +8,11 @@ class SkyFirebaseSettings {
   static const senderId = String.fromEnvironment('SKYTEAM_FIREBASE_SENDER_ID');
   static const databaseUrl = String.fromEnvironment('SKYTEAM_FIREBASE_DATABASE_URL');
   static const projectId = 'guenter-sky-team';
+  static const useEmulator = bool.fromEnvironment('SKYTEAM_USE_EMULATOR');
+  static const emulatorHost = String.fromEnvironment(
+    'SKYTEAM_EMULATOR_HOST',
+    defaultValue: 'localhost',
+  );
 
   static bool configured(bool web) =>
       apiKey.isNotEmpty && senderId.isNotEmpty && databaseUrl.isNotEmpty &&
