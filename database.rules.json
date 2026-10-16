@@ -28,7 +28,8 @@
           ".read": "auth != null && root.child('rooms').child($roomId).child('public').child('members').child(auth.uid).exists()",
           ".write": "auth != null && auth.uid === $uid && root.child('rooms').child($roomId).child('public').child('members').child(auth.uid).exists()",
           ".validate": "newData.hasChildren(['connected', 'lastSeen']) && newData.child('connected').isBoolean() && newData.child('lastSeen').isNumber()"
-        }
+        },
+        ".read": "auth != null && root.child('rooms').child($roomId).child('public').child('members').child(auth.uid).exists()"
       }
     },
     "roomCodes": {
