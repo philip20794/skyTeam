@@ -16,7 +16,13 @@ concurrency:
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
+    env:
+      SKYTEAM_FIREBASE_API_KEY: ${{ vars.SKYTEAM_FIREBASE_API_KEY }}
+      SKYTEAM_FIREBASE_WEB_APP_ID: ${{ vars.SKYTEAM_FIREBASE_WEB_APP_ID }}
+      SKYTEAM_FIREBASE_ANDROID_APP_ID: ${{ vars.SKYTEAM_FIREBASE_ANDROID_APP_ID }}
+      SKYTEAM_FIREBASE_SENDER_ID: ${{ vars.SKYTEAM_FIREBASE_SENDER_ID }}
+      SKYTEAM_FIREBASE_DATABASE_URL: ${{ vars.SKYTEAM_FIREBASE_DATABASE_URL }}
     steps:
       - uses: actions/checkout@v4
 
@@ -57,7 +63,11 @@ jobs:
         run: |
           flutter build apk --release \
             --build-name="1.0.${{ github.run_number }}" \
-            --build-number="${{ github.run_number }}"
+            --build-number="${{ github.run_number }}" \
+            --dart-define="SKYTEAM_FIREBASE_API_KEY=$SKYTEAM_FIREBASE_API_KEY" \
+            --dart-define="SKYTEAM_FIREBASE_ANDROID_APP_ID=$SKYTEAM_FIREBASE_ANDROID_APP_ID" \
+            --dart-define="SKYTEAM_FIREBASE_SENDER_ID=$SKYTEAM_FIREBASE_SENDER_ID" \
+            --dart-define="SKYTEAM_FIREBASE_DATABASE_URL=$SKYTEAM_FIREBASE_DATABASE_URL"
 
       - name: Verify built APK archive
         run: |
@@ -77,7 +87,12 @@ jobs:
           PY
 
       - name: Build Flutter web
-        run: flutter build web --release
+        run: |
+          flutter build web --release \
+            --dart-define="SKYTEAM_FIREBASE_API_KEY=$SKYTEAM_FIREBASE_API_KEY" \
+            --dart-define="SKYTEAM_FIREBASE_WEB_APP_ID=$SKYTEAM_FIREBASE_WEB_APP_ID" \
+            --dart-define="SKYTEAM_FIREBASE_SENDER_ID=$SKYTEAM_FIREBASE_SENDER_ID" \
+            --dart-define="SKYTEAM_FIREBASE_DATABASE_URL=$SKYTEAM_FIREBASE_DATABASE_URL"
 
       - name: Verify Flutter web build
         run: test -s build/web/index.html
