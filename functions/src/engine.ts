@@ -214,7 +214,7 @@ export function transition(input:Room,uid:string,action:Action,actionId:string,r
   b.slots[slot.id]={owner:myRole,original:die.value,value,dieId:die.id};
   privateState.dice=privateState.dice.filter(x=>x.id!==die.id);
   applySlot(p,slot,value);
-  if(p.phase!=="finished"){
+  if(p.result===null){
    if(Object.keys(b.slots).length===8){
     // Two mandatory placements each, plus four discretionary dice.
     room.privateDice[memberForRole(p,"pilot")].dice=[];
@@ -235,7 +235,7 @@ export function transition(input:Room,uid:string,action:Action,actionId:string,r
   privateState.dice=privateState.dice.map(d=>{
    const i=selection.indexOf(d.id);return i<0?d:{...d,value:values[i]};
   });
-  p.rerollPending=p.rerollPending.filter(r=>r!==myRole);
+  p.rerollPending=(p.rerollPending??[]).filter(r=>r!==myRole);
   if(p.rerollPending.length===0){p.rerollPending=null;p.phase="placing";}
  } else if(action.kind==="restart"){
   assert(uid===p.host&&p.phase==="finished","Nur der Host kann nach Spielende neu starten.");
