@@ -123,7 +123,8 @@ class _HomePageState extends State<HomePage> {
     final members = jsonObject(service.publicState['members']);
     final allReady = members.length == 2 &&
         members.values.every((member) => jsonObject(member)['ready'] == true);
-    final invite = Uri.base.replace(queryParameters: {'room': service.roomId ?? ''}).toString();
+    final invite = Uri.parse('https://guenter-sky-team.web.app/')
+        .replace(queryParameters: {'room': service.roomId ?? ''}).toString();
     return ListView(padding: const EdgeInsets.all(20), children: [
       const Text('Warteraum · Montréal', style: TextStyle(fontSize: 22)),
       const SizedBox(height: 18),
