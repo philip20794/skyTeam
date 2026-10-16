@@ -3,14 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-const apkDownloadUrl =
-    'https://github.com/philip20794/skyTeam/releases/download/android-latest/SkyTeam.apk';
-
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
 
   Future<void> _downloadApk(BuildContext context) async {
-    final uri = Uri.parse(apkDownloadUrl);
+    final uri = Uri.base.resolve('/downloads/SkyTeam.apk');
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
