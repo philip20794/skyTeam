@@ -179,3 +179,19 @@ test("radio without target plane has no effect",()=>{
  r=put(r,"a","radio_p",0,1);
  assert.deepEqual(r.public.board.traffic,old);
 });
+
+test("public placement reveals effective value, not secret original roll",()=>{
+ let r=placing();
+ r=put(r,"a","axis_p");
+ assert.equal(r.public.board.slots.axis_p.value,1);
+ assert.equal("original" in r.public.board.slots.axis_p,false);
+});
+test("departing lobby host passes host permission and missing role to successor",()=>{
+ let r=createRoom("a","ABCDEFGH2",1);
+ r=joinRoom(r,"b",2);
+ r=act(r,"a","leave");
+ assert.equal(r.public.host,"b");
+ r=joinRoom(r,"c",3);
+ assert.equal(r.public.members.b.role,"copilot");
+ assert.equal(r.public.members.c.role,"pilot");
+});

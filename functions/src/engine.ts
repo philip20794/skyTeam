@@ -10,7 +10,7 @@ export interface Slot {
 }
 export interface Member { role: Role; ready: boolean; joinedAt: number; }
 export interface Die { id: string; value: number; }
-export interface PlacedDie { owner: Role; original: number; value: number; dieId: string; }
+export interface PlacedDie { owner: Role; value: number; dieId: string; }
 export interface PrivateState { dice: Die[]; rerollSelection?: string[]; }
 export interface Board {
   axis: number; approach: number; traffic: number[]; airportIndex: number;
@@ -88,7 +88,8 @@ export function joinRoom(room:Room,uid:string,now:number):Room {
  if(r.public.members[uid])return r;
  assert(r.public.phase==="lobby","Die Partie wurde bereits gestartet.");
  assert(Object.keys(r.public.members).length<2,"Die Lobby ist voll.");
- r.public.members[uid]={role:"copilot",ready:false,joinedAt:now};
+ const used=Object.values(r.public.members).map(x=>x.role);
+ r.public.members[uid]={role:used.includes("pilot")?"copilot":"pilot",ready:false,joinedAt:now};
  r.privateDice[uid]={dice:[]};r.public.revision++;return r;
 }
 export function availableSlots(room:Room,uid:string,dieId:string):Slot[] {
@@ -211,7 +212,7 @@ export function transition(input:Room,uid:string,action:Action,actionId:string,r
   if(slot.kind==="flaps")assert(slot.order===b.flaps.findIndex(v=>!v),"Landeklappen müssen der Reihe nach ausgefahren werden.");
   if(slot.kind==="brake")assert(slot.order===b.brakes.findIndex(v=>!v),"Bremsen müssen der Reihe nach aktiviert werden.");
   b.coffee-=cost;
-  b.slots[slot.id]={owner:myRole,original:die.value,value,dieId:die.id};
+  b.slots[slot.id]={owner:myRole,value,dieId:die.id};
   privateState.dice=privateState.dice.filter(x=>x.id!==die.id);
   applySlot(p,slot,value);
   if(p.result===null){
@@ -248,6 +249,7 @@ export function transition(input:Room,uid:string,action:Action,actionId:string,r
  } else if(action.kind==="leave"){
   assert(p.phase==="lobby","Nach Spielbeginn kann die Partie nur verlassen werden, wenn sie beendet ist.");
   delete p.members[uid];delete room.privateDice[uid];
+  if(p.host===uid)p.host=Object.keys(p.members)[0]??"";
  } else fail("Unbekannte Aktion.");
  p.actionIds[actionId]=true;
  // Keep a bounded idempotency cache.

@@ -96,6 +96,10 @@ class _GameScreenState extends State<GameScreen> {
   Widget status(GameRepository game) {
     final partner = game.partnerOnline ? 'verbunden' : 'offline';
     final current = game.activeRole == 'pilot' ? 'Pilot' : 'Co-Pilot';
+    final partnerRole = game.role == 'pilot' ? 'copilot' : 'pilot';
+    final partnerPlaced = game.placements.values.where(
+      (placement) => jsonObject(placement)['owner'] == partnerRole,
+    ).length;
     String label = game.phase == 'discussion' ? 'Absprache'
         : game.phase == 'rolling' ? 'Würfeln'
         : game.phase == 'reroll' ? 'Gemeinsamer Neuwurf'
@@ -111,7 +115,8 @@ class _GameScreenState extends State<GameScreen> {
         ]),
         Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
           Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
-          Text('Kaffee ' + game.coffee.toString() + ' · Neuwurf ' + game.rerolls.toString()),
+          Text('Partner: ' + (4 - partnerPlaced).toString() +
+              ' · Kaffee ' + game.coffee.toString() + ' · Neuwurf ' + game.rerolls.toString()),
           IconButton(tooltip: 'Touchflächen anzeigen',
               onPressed: () => setState(() => debugHitboxes = !debugHitboxes),
               icon: const Icon(Icons.grid_4x4, size: 18)),
