@@ -1,4 +1,4 @@
-name: Web build artifact
+name: Build and deploy SkyTeam web
 
 on:
   push:
@@ -8,18 +8,47 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: skyteam-firebase-hosting-live
+  cancel-in-progress: false
+
 jobs:
-  web:
+  build-and-deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
+
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
-      - run: flutter pub get
-      - run: flutter build web --release
-      - uses: actions/upload-artifact@v4
+
+      - name: Install Flutter dependencies
+        run: flutter pub get
+
+      - name: Build release web app
+        run: flutter build web --release
+
+      - name: Upload web build artifact
+        uses: actions/upload-artifact@v4
         with:
           name: SkyTeam-web
           path: build/web/
+          if-no-files-found: error
+
+      - name: Check Firebase deployment credentials
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_GUENTER_SKY_TEAM }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
+            echo "::error::Missing GitHub Actions secret FIREBASE_SERVICE_ACCOUNT_GUENTER_SKY_TEAM. Run 'firebase init hosting:github' locally for project guenter-sky-team, or add a Firebase Hosting service-account JSON key under this exact secret name."
+            exit 1
+          fi
+
+      - name: Deploy to Firebase Hosting (live)
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_GUENTER_SKY_TEAM }}
+          projectId: guenter-sky-team
+          channelId: live
