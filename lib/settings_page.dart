@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:skyteam/services/apk_availability.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -27,12 +28,22 @@ class SettingsPage extends StatelessWidget {
       body: ListView(
         children: [
           if (canDownload)
-            ListTile(
-              leading: const Icon(Icons.android),
-              title: const Text('Android-App installieren'),
-              subtitle: const Text('Aktuelle APK herunterladen'),
-              trailing: const Icon(Icons.download_outlined),
-              onTap: () => _downloadApk(context),
+            FutureBuilder<bool>(
+              future: isApkAvailable(),
+              builder: (context, snapshot) {
+                final available = snapshot.data == true;
+                return ListTile(
+                  leading: const Icon(Icons.android),
+                  title: const Text('Android-App installieren'),
+                  subtitle: Text(available
+                      ? 'Aktuelle APK herunterladen'
+                      : 'APK ist noch nicht verfügbar'),
+                  trailing: Icon(available
+                      ? Icons.download_outlined
+                      : Icons.hourglass_empty),
+                  onTap: available ? () => _downloadApk(context) : null,
+                );
+              },
             ),
           FutureBuilder<PackageInfo>(
             future: PackageInfo.fromPlatform(),
