@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <base href="$FLUTTER_BASE_HREF">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#163D57">
+  <meta name="description" content="SkyTeam – Android- und Web-App">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="SkyTeam">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <title>SkyTeam</title>
+  <style>
+    #install-options { border: 0; border-radius: 16px; padding: 22px; max-width: 350px; width: calc(100% - 48px); font: 16px system-ui; background: #fff; color: #163D57; }
+    #install-options::backdrop { background: #0009; }
+    #install-options button, #install-options a { display: block; box-sizing: border-box; width: 100%; padding: 12px; margin: 10px 0; text-align: center; font: inherit; background: #163D57; color: #fff; border: 0; border-radius: 9px; text-decoration: none; cursor: pointer; }
+    #install-options #install-later { background: transparent; color: #163D57; }
+  </style>
+  <script src="install-options.js" defer></script>
+</head>
+<body>
+  <dialog id="install-options" aria-labelledby="install-title">
+    <h2 id="install-title">SkyTeam installieren</h2>
+    <p>Wie möchtest du SkyTeam auf Android installieren?</p>
+    <button id="install-pwa" type="button">Als Web-App (PWA) installieren</button>
+    <a id="install-apk" href="https://github.com/philip20794/skyTeam/releases/download/android-latest/SkyTeam.apk" target="_blank" rel="noopener noreferrer">Android-App (APK) herunterladen</a>
+    <button id="install-later" type="button">Nicht jetzt</button>
+  </dialog>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>
