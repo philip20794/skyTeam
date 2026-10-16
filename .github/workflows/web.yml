@@ -50,11 +50,23 @@ jobs:
           npm install --prefix functions --no-audit --no-fund
           npm --prefix functions test
 
+      - name: Install Java 21 for the current Firebase Emulator Suite
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
       - name: Test Realtime Database security rules (emulator)
         run: |
           npx --yes firebase-tools@latest emulators:exec \
             --only database --project demo-skyteam \
             "npm --prefix functions run test:rules"
+
+      - name: Restore Java 17 for Android Gradle build
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
 
       - name: Generate Android project
         run: flutter create --platforms=android --project-name skyteam --org de.skyteam .
