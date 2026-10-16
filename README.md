@@ -2,48 +2,47 @@
 
 Flutter-App für Android und als installierbare Web-App (PWA).
 
-## Lokale Entwicklung
+## Lokal starten
 
 ```sh
 flutter pub get
 flutter create --platforms=android --project-name skyteam --org de.skyteam .
 flutter run -d chrome
-# alternativ: flutter run -d android
+# Alternativ auf Android: flutter run -d android
 ```
 
-## Automatische Veröffentlichung
+## Veröffentlichung per GitHub Actions
 
-Die GitHub Action `.github/workflows/web.yml` führt bei jedem Push auf `main` Folgendes aus:
+Bei jedem Push auf `main` läuft `.github/workflows/web.yml`. Der Workflow:
 
-1. Flutter-Abhängigkeiten laden, statische Analyse und Tests ausführen.
-2. Eine Release-APK für Android und die Flutter-Web-App bauen.
-3. Die APK nach `build/web/downloads/SkyTeam.apk` kopieren.
-4. Beide Builds als GitHub-Actions-Artefakte speichern.
-5. Den kompletten Inhalt von `build/web` auf den Firebase-Hosting-Live-Kanal von `guenter-sky-team` deployen.
+1. Analysiert den Flutter-Code und führt die Tests aus.
+2. Baut die Android-Release-APK, prüft ihre ZIP-Struktur und `AndroidManifest.xml`.
+3. Stellt die APK als GitHub-Actions-Artefakt **SkyTeam-Android-APK** bereit.
+4. Veröffentlicht `SkyTeam.apk` in einer GitHub-Release mit dem festen Tag `android-latest`.
+5. Baut die Flutter-PWA und stellt sie als GitHub-Actions-Artefakt bereit.
+6. Veröffentlicht die Flutter-Web-App auf Firebase Hosting.
 
-Pull Requests führen dieselben Build-Checks aus, veröffentlichen aber nichts. Ein manueller Start des Workflows ist ebenfalls möglich.
+**Webseite:** https://guenter-sky-team.web.app/
 
-Nach erfolgreichem Deployment lautet der öffentliche APK-Pfad **`/downloads/SkyTeam.apk` auf der Domain der Web-App**. Die Installationsauswahl im Android-Browser und der APK-Eintrag in den Einstellungen verwenden beide diesen Pfad. Das private GitHub-Repository muss dafür nicht öffentlich werden.
+**Android-APK (GitHub-Anmeldung mit Repository-Zugriff erforderlich):**
+https://github.com/philip20794/skyTeam/releases/download/android-latest/SkyTeam.apk
 
-## Einmalige Firebase-Berechtigung für GitHub Actions
+Alternativ lässt sich die APK im [Actions-Build](https://github.com/philip20794/skyTeam/actions) als Artefakt herunterladen. Die GitHub-Release wird erst bei einem erfolgreichen Build auf `main` angelegt.
 
-Die Action benötigt das GitHub-Repository-Secret **`FIREBASE_SERVICE_ACCOUNT_GUENTER_SKY_TEAM`**. Dieses enthält die JSON-Zugangsdaten eines Firebase-Service-Accounts mit Berechtigung zum Deployment auf das Firebase-Hosting-Projekt `guenter-sky-team`.
+### Warum die APK nicht standardmäßig auf Firebase liegt
 
-Die offizielle Firebase-Einrichtung kann dieses Secret anlegen:
+Firebase Hosting verbietet im kostenlosen **Spark-Tarif** `.apk`-Dateien. Deshalb veröffentlicht dieser Workflow die **PWA standardmäßig ohne APK**, damit das Firebase-Deployment nicht mit HTTP 400 fehlschlägt. Die APK liegt separat auf GitHub.
 
-```sh
-firebase login
-firebase init hosting:github
-```
+Das Repository ist privat. **Der GitHub-Release-Link ist daher nicht öffentlich**: Nur angemeldete Personen mit Repository-Zugriff können ihn nutzen. Der Web-Installationsdialog zeigt einen öffentlichen APK-Download erst dann, wenn tatsächlich eine APK unter `/downloads/SkyTeam.apk` erreichbar ist.
 
-Dabei das bestehende Projekt `guenter-sky-team` und das Repository `philip20794/skyTeam` wählen. Firebase erstellt gegebenenfalls weitere Workflow-Dateien: Diese nicht zusätzlich übernehmen, da die vorhandene `.github/workflows/web.yml` bereits baut und deployed. Falls das Setup einen anderen Secret-Namen anlegt, das Secret in GitHub umbenennen oder den Namen im vorhandenen Workflow angleichen. Den JSON-Schlüssel niemals committen.
+Für einen **öffentlichen Direktdownload von der Firebase-Website**: Das Firebase-Projekt `guenter-sky-team` auf den kostenpflichtigen Blaze-Tarif umstellen, danach im GitHub-Repository unter *Settings → Secrets and variables → Actions → Variables* die Variable `FIREBASE_HOST_APK` auf `true` setzen. Bei künftigen Deployments wird dann auch `build/web/downloads/SkyTeam.apk` hochgeladen und dessen öffentliche SHA-256-Prüfsumme geprüft. **Blaze kann Kosten verursachen.** Für einen kostenfreien öffentlichen Download wäre alternativ ein separater öffentlicher Download-Host nötig.
 
-Secret-Verwaltung: https://github.com/philip20794/skyTeam/settings/secrets/actions
+## Firebase-Zugang für GitHub Actions
 
-Bis das Secret eingerichtet ist, produziert die Pipeline nach jedem Push weiterhin die APK und Web-Artefakte, meldet aber den Firebase-Deploy-Schritt als fehlgeschlagen. Der öffentliche APK-Link funktioniert erst nach einem erfolgreichen Firebase-Deployment.
+Im Repository muss das GitHub-Secret `FIREBASE_SERVICE_ACCOUNT_GUENTER_SKY_TEAM` existieren. Die zugehörigen Zugangsdaten des Firebase-Service-Accounts dürfen **nicht** committed werden. Die Einrichtung ist über `firebase init hosting:github` möglich. Zusätzlich erzeugte Standard-Workflows, die `npm ci && npm run build` verwenden, werden nicht benötigt.
 
-## Android-Signierung
+## Android-Signierung für Updates
 
-Die aktuelle Android-Release-APK wird vom durch `flutter create` erzeugten Standardprojekt mit dessen Debug-Signing gebaut. Diese APK ist installierbar, **aber wegen der wechselnden Debug-Schlüssel von GitHub-Runnern nicht zuverlässig als Update über eine vorherige Version installierbar**. Für dauerhafte, updatefähige APK-Versionen muss später ein fester Release-Keystore als GitHub-Secret eingerichtet und im Android-Build verwendet werden. Bis dahin kann eine Deinstallation der vorherigen Version erforderlich sein.
+Das via `flutter create` generierte Standardprojekt nutzt ohne konfigurierte Release-Signierung einen Debug-Schlüssel für das Release-APK. Dieser Schlüssel kann zwischen verschiedenen CI-Runs wechseln. Dadurch kann die Installation einer neuen APK über eine bereits installierte Version fehlschlagen. Für zuverlässige Updates muss ein **dauerhafter Release-Keystore** eingerichtet und sicher für GitHub Actions verfügbar gemacht werden.
 
-Die PWA-Installation auf Android funktioniert nur in unterstützten Browsern, sobald deren Installationsbedingungen erfüllt sind. Der Browser-Installationsdialog lässt sich nicht erzwingen.
+Die PWA-Installation funktioniert nur in unterstützten Browsern und kann nicht bei jedem Seitenaufruf erzwungen werden.
