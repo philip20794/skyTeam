@@ -207,7 +207,7 @@ class _GameScreenState extends State<GameScreen> {
           onPressed: game.busy ? null : () {
             final ids = rerollSelection.toList();
             rerollSelection.clear();
-            return send('submitRerollSelection', {'selection': ids});
+            send('submitRerollSelection', {'selection': ids});
           },
           child: const Text('Neuwurf bestätigen'),
         )
