@@ -144,6 +144,24 @@ class _GameScreenState extends State<GameScreen> {
           Text('Position ' + approach.toString() + '/' + destination.toString() +
               ' · Flugverkehr: ' + remaining.toString(), style: const TextStyle(fontSize: 12)),
         ])),
+        Positioned(top: 56, left: 16, right: 16,
+          child: Row(children: [
+            for (var i = 0; i < traffic.length; i++)
+              Expanded(child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                margin: const EdgeInsets.symmetric(horizontal: 1),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(4),
+                  color: i == approach ? Colors.green.shade800 : const Color(0xff233b51),
+                  border: Border.all(color: i == approach ? Colors.lightGreenAccent : Colors.white24),
+                ),
+                child: Text(i == destination ? 'YUL'
+                    : (traffic[i] as num).toInt() == 0 ? '—'
+                    : '✈' + (traffic[i] as num).toInt().toString(),
+                    textAlign: TextAlign.center, style: const TextStyle(fontSize: 9)),
+              )),
+          ]),
+        ),
         Positioned(top: 130, left: 106, width: 158, height: 158,
           child: Container(
             decoration: BoxDecoration(shape: BoxShape.circle,
@@ -165,6 +183,12 @@ class _GameScreenState extends State<GameScreen> {
           final placed = jsonObject(game.placements[slot.id]);
           final occupied = placed.isNotEmpty;
           final enabled = canPlace(slot);
+          final progress = slot.kind == 'gear'
+              ? b['gear'] as List? : slot.kind == 'flaps'
+                  ? b['flaps'] as List? : slot.kind == 'brake'
+                      ? b['brakes'] as List? : null;
+          final activated = progress != null && slot.order != null
+              && slot.order! < progress.length && progress[slot.order!] == true;
           final color = slot.owner == 'pilot' ? const Color(0xff0b4fb9)
               : slot.owner == 'copilot' ? const Color(0xffbf6516)
               : const Color(0xff4a788d);
@@ -180,13 +204,14 @@ class _GameScreenState extends State<GameScreen> {
                   borderRadius: BorderRadius.circular(7),
                   border: Border.all(
                     color: enabled ? Colors.lightGreenAccent
+                        : activated ? Colors.greenAccent
                         : debugHitboxes ? Colors.pinkAccent : Colors.white38,
                     width: enabled ? 3 : 1,
                   ),
                 ),
                 child: Text(
                   occupied ? placed['value'].toString()
-                      : debugHitboxes ? slot.id : slot.title,
+                      : debugHitboxes ? slot.id : activated ? '✓ ' + slot.title : slot.title,
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: debugHitboxes ? 8 : 13,
                       fontWeight: occupied ? FontWeight.bold : FontWeight.normal),
