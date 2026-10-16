@@ -39,6 +39,17 @@ jobs:
       - name: Run Flutter tests
         run: flutter test
 
+      - name: Install and test authoritative TypeScript game engine
+        run: |
+          npm install --prefix functions --no-audit --no-fund
+          npm --prefix functions test
+
+      - name: Test Realtime Database security rules (emulator)
+        run: |
+          npx --yes firebase-tools@latest emulators:exec \
+            --only database --project demo-skyteam \
+            "npm --prefix functions run test:rules"
+
       - name: Generate Android project
         run: flutter create --platforms=android --project-name skyteam --org de.skyteam .
 
@@ -117,6 +128,16 @@ jobs:
             echo "::error::Missing repository secret FIREBASE_SERVICE_ACCOUNT_GUENTER_SKY_TEAM. Set it up once with 'firebase init hosting:github', or add the Firebase service-account JSON in GitHub Settings > Secrets and variables > Actions."
             exit 1
           fi
+
+      - name: Authenticate for optional Firebase backend deployment
+        if: github.event_name != 'pull_request' && vars.FIREBASE_DEPLOY_BACKEND == 'true'
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_GUENTER_SKY_TEAM }}
+
+      - name: Publish Cloud Functions and Realtime Database rules (Blaze only)
+        if: github.event_name != 'pull_request' && vars.FIREBASE_DEPLOY_BACKEND == 'true'
+        run: npx --yes firebase-tools@latest deploy --only functions,database --project guenter-sky-team
 
       - name: Publish web app to Firebase Hosting (APK only on Blaze)
         if: github.event_name != 'pull_request'
