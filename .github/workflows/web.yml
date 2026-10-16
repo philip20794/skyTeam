@@ -1,25 +1,92 @@
-name: Web build artifact
+name: Build and publish SkyTeam (Web + APK)
 
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: skyteam-publish-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
-  web:
+  build-and-publish:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
-      - run: flutter pub get
-      - run: flutter build web --release
-      - uses: actions/upload-artifact@v4
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze Dart code
+        run: flutter analyze --no-fatal-infos
+
+      - name: Run Flutter tests
+        run: flutter test
+
+      - name: Generate Android project
+        run: flutter create --platforms=android --project-name skyteam --org de.skyteam .
+
+      - name: Build Android release APK
+        run: |
+          flutter build apk --release \
+            --build-name="1.0.${{ github.run_number }}" \
+            --build-number="${{ github.run_number }}"
+
+      - name: Build Flutter web
+        run: flutter build web --release
+
+      - name: Bundle APK into Firebase Hosting site
+        run: |
+          test -s build/app/outputs/flutter-apk/app-release.apk
+          test -s build/web/index.html
+          mkdir -p build/web/downloads
+          cp build/app/outputs/flutter-apk/app-release.apk build/web/downloads/SkyTeam.apk
+          test -s build/web/downloads/SkyTeam.apk
+
+      - name: Save APK build artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: SkyTeam-web
+          name: SkyTeam-Android-APK
+          path: build/web/downloads/SkyTeam.apk
+          if-no-files-found: error
+
+      - name: Save web build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SkyTeam-Web
           path: build/web/
+          if-no-files-found: error
+
+      - name: Verify Firebase credentials
+        if: github.event_name != 'pull_request'
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_GUENTER_SKY_TEAM }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT_JSON" ]; then
+            echo "::error::Missing repository secret FIREBASE_SERVICE_ACCOUNT_GUENTER_SKY_TEAM. Set it up once with 'firebase init hosting:github', or add the Firebase service-account JSON in GitHub Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+
+      - name: Publish web app and APK to Firebase Hosting
+        if: github.event_name != 'pull_request'
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_GUENTER_SKY_TEAM }}
+          projectId: guenter-sky-team
+          channelId: live
