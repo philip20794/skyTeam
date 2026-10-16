@@ -71,6 +71,31 @@ jobs:
       - name: Generate Android project
         run: flutter create --platforms=android --project-name skyteam --org de.skyteam .
 
+      - name: Ensure Android release has Internet permission and correct title
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          file = Path("android/app/src/main/AndroidManifest.xml")
+          manifest = file.read_text(encoding="utf-8")
+          if 'android.permission.INTERNET' not in manifest:
+              manifest = manifest.replace(
+                  '<application',
+                  '<uses-permission android:name="android.permission.INTERNET" />\n    <application',
+                  1,
+              )
+          manifest, count = re.subn(
+              r'android:label="[^"]*"',
+              'android:label="SkyTeam"',
+              manifest,
+              count=1,
+          )
+          if count != 1:
+              raise SystemExit("Android app label not found")
+          file.write_text(manifest, encoding="utf-8")
+          PY
+
       - name: Build Android release APK
         run: |
           flutter build apk --release \
