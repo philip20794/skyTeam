@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write # publish an APK to private GitHub Releases
+  contents: write # publish an APK to GitHub Releases
 
 concurrency:
   group: skyteam-publish-${{ github.ref }}
@@ -87,7 +87,7 @@ jobs:
           path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
 
-      - name: Publish APK to GitHub Release (repository access required)
+      - name: Publish public APK to GitHub Release
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -97,7 +97,7 @@ jobs:
             gh release create android-latest \
               --target "$GITHUB_SHA" \
               --title "SkyTeam Android (latest)" \
-              --notes "Aktueller automatischer Android-Build. Da das Repository privat ist, ist zum Herunterladen GitHub-Zugriff erforderlich."
+              --notes "Automatisch erstellter SkyTeam Android-Build. APK öffentlich und kostenlos verfügbar."
           fi
           gh release upload android-latest SkyTeam.apk --clobber
 

@@ -18,13 +18,13 @@ Bei jedem Push auf `main` läuft `.github/workflows/web.yml`. Der Workflow:
 1. Analysiert den Flutter-Code und führt die Tests aus.
 2. Baut die Android-Release-APK, prüft ihre ZIP-Struktur und `AndroidManifest.xml`.
 3. Stellt die APK als GitHub-Actions-Artefakt **SkyTeam-Android-APK** bereit.
-4. Veröffentlicht `SkyTeam.apk` in einer GitHub-Release mit dem festen Tag `android-latest`.
+4. Veröffentlicht `SkyTeam.apk` in einer öffentlichen GitHub-Release mit dem festen Tag `android-latest`.
 5. Baut die Flutter-PWA und stellt sie als GitHub-Actions-Artefakt bereit.
 6. Veröffentlicht die Flutter-Web-App auf Firebase Hosting.
 
 **Webseite:** https://guenter-sky-team.web.app/
 
-**Android-APK (GitHub-Anmeldung mit Repository-Zugriff erforderlich):**
+**Öffentliche Android-APK (ohne GitHub-Anmeldung):**
 https://github.com/philip20794/skyTeam/releases/download/android-latest/SkyTeam.apk
 
 Alternativ lässt sich die APK im [Actions-Build](https://github.com/philip20794/skyTeam/actions) als Artefakt herunterladen. Die GitHub-Release wird erst bei einem erfolgreichen Build auf `main` angelegt.
@@ -33,9 +33,9 @@ Alternativ lässt sich die APK im [Actions-Build](https://github.com/philip20794
 
 Firebase Hosting verbietet im kostenlosen **Spark-Tarif** `.apk`-Dateien. Deshalb veröffentlicht dieser Workflow die **PWA standardmäßig ohne APK**, damit das Firebase-Deployment nicht mit HTTP 400 fehlschlägt. Die APK liegt separat auf GitHub.
 
-Das Repository ist privat. **Der GitHub-Release-Link ist daher nicht öffentlich**: Nur angemeldete Personen mit Repository-Zugriff können ihn nutzen. Der Web-Installationsdialog zeigt einen öffentlichen APK-Download erst dann, wenn tatsächlich eine APK unter `/downloads/SkyTeam.apk` erreichbar ist.
+Das Repository ist **öffentlich**. Der APK-Download über GitHub Releases ist deshalb auch ohne GitHub-Anmeldung verfügbar. Die SkyTeam-Einstellungen und der Android-Installationsdialog verweisen direkt auf die GitHub-Release-APK; der frühere Firebase-Pfad `/downloads/SkyTeam.apk` wird im kostenlosen Spark-Tarif nicht genutzt.
 
-Für einen **öffentlichen Direktdownload von der Firebase-Website**: Das Firebase-Projekt `guenter-sky-team` auf den kostenpflichtigen Blaze-Tarif umstellen, danach im GitHub-Repository unter *Settings → Secrets and variables → Actions → Variables* die Variable `FIREBASE_HOST_APK` auf `true` setzen. Bei künftigen Deployments wird dann auch `build/web/downloads/SkyTeam.apk` hochgeladen und dessen öffentliche SHA-256-Prüfsumme geprüft. **Blaze kann Kosten verursachen.** Für einen kostenfreien öffentlichen Download wäre alternativ ein separater öffentlicher Download-Host nötig.
+Für einen **direkt von Firebase gehosteten APK-Download**: Das Firebase-Projekt `guenter-sky-team` auf den kostenpflichtigen Blaze-Tarif umstellen, danach im GitHub-Repository unter *Settings → Secrets and variables → Actions → Variables* die Variable `FIREBASE_HOST_APK` auf `true` setzen. Bei künftigen Deployments wird dann auch `build/web/downloads/SkyTeam.apk` hochgeladen und dessen öffentliche SHA-256-Prüfsumme geprüft. **Blaze kann Kosten verursachen.** Für öffentliche kostenlose APK-Downloads genügt jedoch bereits GitHub Releases.
 
 ## Firebase-Zugang für GitHub Actions
 
