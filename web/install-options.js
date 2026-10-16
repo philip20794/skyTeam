@@ -18,21 +18,9 @@
   }
 
   laterButton.addEventListener('click', dismiss);
-  // A missing APK URL is rewritten by Firebase to index.html. Never offer that
-  // HTML fallback as an Android download.
-  apkButton.removeAttribute('href');
-  apkButton.style.display = 'none';
-  fetch('/downloads/SkyTeam.apk', { method: 'HEAD', cache: 'no-store' })
-    .then((response) => {
-      const bytes = Number(response.headers.get('content-length'));
-      if (response.ok && Number.isFinite(bytes) && bytes > 1024 * 1024) {
-        apkButton.href = '/downloads/SkyTeam.apk';
-        apkButton.style.display = '';
-      }
-    })
-    .catch(() => {
-      // APK is not published yet. The PWA install option remains available.
-    });
+  // Releases are public, so Android users can download the APK directly.
+  // Do not probe GitHub with fetch/HEAD: cross-origin requests can be blocked.
+  apkButton.href = 'https://github.com/philip20794/skyTeam/releases/download/android-latest/SkyTeam.apk';
 
   apkButton.addEventListener('click', dismiss);
   dialog.addEventListener('cancel', dismiss);
