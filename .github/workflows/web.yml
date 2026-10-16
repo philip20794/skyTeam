@@ -16,7 +16,13 @@ concurrency:
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
+    env:
+      SKYTEAM_FIREBASE_API_KEY: ${{ vars.SKYTEAM_FIREBASE_API_KEY || 'AIzaSyD9QtKycplmKvXT1i8sdDNMjkCiM2SeH-g' }}
+      SKYTEAM_FIREBASE_WEB_APP_ID: ${{ vars.SKYTEAM_FIREBASE_WEB_APP_ID || '1:772729294994:web:ce0adb587dff2efe8e164b' }}
+      SKYTEAM_FIREBASE_ANDROID_APP_ID: ${{ vars.SKYTEAM_FIREBASE_ANDROID_APP_ID }}
+      SKYTEAM_FIREBASE_SENDER_ID: ${{ vars.SKYTEAM_FIREBASE_SENDER_ID || '772729294994' }}
+      SKYTEAM_FIREBASE_DATABASE_URL: ${{ vars.SKYTEAM_FIREBASE_DATABASE_URL || 'https://guenter-sky-team-default-rtdb.europe-west1.firebasedatabase.app' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -39,14 +45,66 @@ jobs:
       - name: Run Flutter tests
         run: flutter test
 
+      - name: Install and test authoritative TypeScript game engine
+        run: |
+          npm install --prefix functions --no-audit --no-fund
+          npm --prefix functions test
+
+      - name: Install Java 21 for the current Firebase Emulator Suite
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Test Realtime Database security rules (emulator)
+        run: |
+          npx --yes firebase-tools@latest emulators:exec \
+            --only database --project demo-skyteam \
+            "npm --prefix functions run test:rules"
+
+      - name: Restore Java 17 for Android Gradle build
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
       - name: Generate Android project
         run: flutter create --platforms=android --project-name skyteam --org de.skyteam .
+
+      - name: Ensure Android release has Internet permission and correct title
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          file = Path("android/app/src/main/AndroidManifest.xml")
+          manifest = file.read_text(encoding="utf-8")
+          if 'android.permission.INTERNET' not in manifest:
+              manifest = manifest.replace(
+                  '<application',
+                  '<uses-permission android:name="android.permission.INTERNET" />\n    <application',
+                  1,
+              )
+          manifest, count = re.subn(
+              r'android:label="[^"]*"',
+              'android:label="SkyTeam"',
+              manifest,
+              count=1,
+          )
+          if count != 1:
+              raise SystemExit("Android app label not found")
+          file.write_text(manifest, encoding="utf-8")
+          PY
 
       - name: Build Android release APK
         run: |
           flutter build apk --release \
             --build-name="1.0.${{ github.run_number }}" \
-            --build-number="${{ github.run_number }}"
+            --build-number="${{ github.run_number }}" \
+            --dart-define="SKYTEAM_FIREBASE_API_KEY=$SKYTEAM_FIREBASE_API_KEY" \
+            --dart-define="SKYTEAM_FIREBASE_ANDROID_APP_ID=$SKYTEAM_FIREBASE_ANDROID_APP_ID" \
+            --dart-define="SKYTEAM_FIREBASE_SENDER_ID=$SKYTEAM_FIREBASE_SENDER_ID" \
+            --dart-define="SKYTEAM_FIREBASE_DATABASE_URL=$SKYTEAM_FIREBASE_DATABASE_URL"
 
       - name: Verify built APK archive
         run: |
@@ -66,7 +124,12 @@ jobs:
           PY
 
       - name: Build Flutter web
-        run: flutter build web --release
+        run: |
+          flutter build web --release \
+            --dart-define="SKYTEAM_FIREBASE_API_KEY=$SKYTEAM_FIREBASE_API_KEY" \
+            --dart-define="SKYTEAM_FIREBASE_WEB_APP_ID=$SKYTEAM_FIREBASE_WEB_APP_ID" \
+            --dart-define="SKYTEAM_FIREBASE_SENDER_ID=$SKYTEAM_FIREBASE_SENDER_ID" \
+            --dart-define="SKYTEAM_FIREBASE_DATABASE_URL=$SKYTEAM_FIREBASE_DATABASE_URL"
 
       - name: Verify Flutter web build
         run: test -s build/web/index.html
@@ -117,6 +180,16 @@ jobs:
             echo "::error::Missing repository secret FIREBASE_SERVICE_ACCOUNT_GUENTER_SKY_TEAM. Set it up once with 'firebase init hosting:github', or add the Firebase service-account JSON in GitHub Settings > Secrets and variables > Actions."
             exit 1
           fi
+
+      - name: Authenticate for optional Firebase backend deployment
+        if: github.event_name != 'pull_request' && vars.FIREBASE_DEPLOY_BACKEND == 'true'
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_GUENTER_SKY_TEAM }}
+
+      - name: Publish Cloud Functions and Realtime Database rules (Blaze only)
+        if: github.event_name != 'pull_request' && vars.FIREBASE_DEPLOY_BACKEND == 'true'
+        run: npx --yes firebase-tools@latest deploy --only functions,database --project guenter-sky-team
 
       - name: Publish web app to Firebase Hosting (APK only on Blaze)
         if: github.event_name != 'pull_request'
