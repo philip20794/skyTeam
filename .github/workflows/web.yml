@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write # publish an APK to private GitHub Releases
 
 concurrency:
   group: skyteam-publish-${{ github.ref }}
@@ -68,10 +68,14 @@ jobs:
       - name: Build Flutter web
         run: flutter build web --release
 
-      - name: Bundle APK into Firebase Hosting site
+      - name: Verify Flutter web build
+        run: test -s build/web/index.html
+
+      # Firebase Spark rejects files with the .apk extension. The APK is
+      # hosted on Firebase only if this project has been upgraded to Blaze.
+      - name: Include APK in Firebase Hosting (Blaze only)
+        if: vars.FIREBASE_HOST_APK == 'true'
         run: |
-          test -s build/app/outputs/flutter-apk/app-release.apk
-          test -s build/web/index.html
           mkdir -p build/web/downloads
           cp build/app/outputs/flutter-apk/app-release.apk build/web/downloads/SkyTeam.apk
           test -s build/web/downloads/SkyTeam.apk
@@ -80,8 +84,22 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: SkyTeam-Android-APK
-          path: build/web/downloads/SkyTeam.apk
+          path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
+
+      - name: Publish APK to GitHub Release (repository access required)
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp build/app/outputs/flutter-apk/app-release.apk SkyTeam.apk
+          if ! gh release view android-latest >/dev/null 2>&1; then
+            gh release create android-latest \
+              --target "$GITHUB_SHA" \
+              --title "SkyTeam Android (latest)" \
+              --notes "Aktueller automatischer Android-Build. Da das Repository privat ist, ist zum Herunterladen GitHub-Zugriff erforderlich."
+          fi
+          gh release upload android-latest SkyTeam.apk --clobber
 
       - name: Save web build artifact
         uses: actions/upload-artifact@v4
@@ -100,7 +118,7 @@ jobs:
             exit 1
           fi
 
-      - name: Publish web app and APK to Firebase Hosting
+      - name: Publish web app to Firebase Hosting (APK only on Blaze)
         if: github.event_name != 'pull_request'
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
@@ -109,7 +127,7 @@ jobs:
           channelId: live
 
       - name: Verify the public APK matches the built APK
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && vars.FIREBASE_HOST_APK == 'true'
         run: |
           python3 - <<'PY'
           import hashlib
